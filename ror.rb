@@ -1,50 +1,42 @@
 require 'open-uri'
 require 'nokogiri'
-require 'json'
-# require 'geocoder'    # if you want to resolve timezone by location
 
-def fetch_contributors(limit = 1_000)
-  url = "https://contributors.rubyonrails.org/"
-  doc = Nokogiri::HTML(URI.open(url))
-  rows = doc.css("table tr").drop(1)  # skip header row
-  contributors = rows.map do |tr|
+BASE_URL = "https://contributors.rubyonrails.org"
+
+def fetch_contributors(limit = 1000)
+  doc = Nokogiri::HTML(URI.open(BASE_URL))
+  rows = doc.css("table tr").drop(1)
+  rows.first(limit).map do |tr|
     cols = tr.css("td")
     {
       name: cols[1]&.text&.strip,
+      url: BASE_URL + cols[1].at_css('a')['href'],
       since: cols[2]&.text&.strip,
       commits: cols[3]&.text&.strip.to_i
     }
-  end.compact.first(limit)
-  contributors
-end
-
-def group_into_mobs(contributors, group_size = 4)
-  contributors.each_slice(group_size).to_a
-end
-
-# Optional: timezone clustering placeholder
-def cluster_by_timezone(contributors)
-  # If you have contributor location/timezone, you could group by timezone buckets
-  # Here we just stub: treat all as “UTC” for now
-  contributors.group_by { |c| "UTC" }
-end
-
-def output_sessions(groups)
-  groups.each_with_index do |grp, idx|
-    puts "Session #{idx+1}:"
-    grp.each_with_index do |c, j|
-      puts "  Member #{j+1}: #{c[:name]} (since #{c[:since]}, commits #{c[:commits]})"
-    end
-    puts "  → Suggested link to start a mob session: https://mobti.me"
-    puts "---"
   end
 end
 
-# main flow
-contributors = fetch_contributors(1_000)
-timezones_buckets = cluster_by_timezone(contributors)
-timezones_buckets.each do |tz, list|
-  puts "=== Timezone group: #{tz} (#{list.size} contributors) ==="
-  groups = group_into_mobs(list, 4)
-  output_sessions(groups)
+def create_mob_groups(contributors, group_size = 4)
+  contributors.each_slice(group_size).with_index(1).map do |group, i|
+    {
+      mob_number: i,
+      members: group,
+      timer: "https://mobti.me/?name=rormob#{i}&time=7"
+    }
+  end
+end
+
+contributors = fetch_contributors(1000)
+mobs = create_mob_groups(contributors, 4)
+
+puts "Fetched #{contributors.size} contributors."
+puts "Created #{mobs.size} mob groups.\n\n"
+
+mobs.each do |mob|
+  puts "Mob ##{mob[:mob_number]} — #{mob[:timer]}"
+  mob[:members].each_with_index do |m, idx|
+    puts "  #{idx + 1}. #{m[:name]} — #{m[:url]}"
+  end
+  puts "---"
 end

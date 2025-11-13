@@ -1,0 +1,68 @@
+# Rails Contributors Tools
+
+A small Ruby toolkit for exploring and organising data about Ruby on Rails contributors.
+
+## Overview
+
+These scripts and CSV files work together to:
+1. Collect Rails contributor data from [contributors.rubyonrails.org](https://contributors.rubyonrails.org).
+2. Extract their GitHub usernames by following commit links.
+3. Keep track of which contributors could or couldn’t be matched.
+4. Generate a simple webpage (`rails_mobs.html`) that forms “mob programming” groups of contributors.
+
+---
+
+## File Descriptions
+
+### CSV Files
+
+- **contributors.csv**  
+  Original export of contributors with their commit counts and contributor URLs.
+
+- **contributors_with_github.csv**  
+  Output CSV containing contributors successfully matched with GitHub usernames.
+
+- **contributors_github_resume.csv**  
+  Stores partial progress — the script resumes from where it left off.
+
+- **unavailable.csv**  
+  List of contributors whose GitHub usernames couldn’t be found.
+
+---
+
+### Ruby Scripts
+
+- **contributors_github.rb**  
+  Reads each contributor’s page, follows their first commit link to GitHub, and extracts their username.  
+  Creates or updates `contributors_with_github.csv` and `contributors_github_resume.csv`.
+
+- **createweb.rb**  
+  Builds the “Rails Mobs” webpage:
+  - Reads from `contributors_with_github.csv`
+  - Excludes names found in `unavailable.csv`
+  - Randomly assigns 4 contributors per mob group
+  - Links each username to their GitHub profile
+  - Links each group heading to a [mobti.me](https://mobti.me) mob timer  
+  Outputs: `rails_mobs.html`
+
+- **ror.rb**  
+  Early prototype for scraping contributor data — mostly redundant now but kept for reference.
+
+---
+
+### Outputs
+
+- **rails_mobs.html**  
+  Generated webpage listing randomised mob programming groups with clickable GitHub links and a timer link.
+
+- **output_1.txt**, **output2.txt**, **output3.txt**, **output4.txt**  
+  Temporary or debug logs from various scraping or parsing runs.
+
+---
+
+## Usage
+
+### 1. Extract GitHub usernames
+Run the main extraction script:
+```bash
+ruby contributors_github.rb
